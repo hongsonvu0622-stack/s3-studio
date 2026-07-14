@@ -42,6 +42,7 @@ function createWindow() {
 }
 
 let downloadedFileName = null;
+let pendingUpdateInfo = null;
 
 function setupAutoUpdater() {
   ipcMain.handle('updater:check', async () => {
@@ -52,19 +53,8 @@ function setupAutoUpdater() {
     try {
       const result = await s3Updater.checkLatestRelease();
       if (result.status === 'update-available') {
+        pendingUpdateInfo = result;
         if (mainWindow) mainWindow.webContents.send('updater:available', { version: result.latestVersion });
-        if (result.downloadUrl && result.fileName) {
-          s3Updater.downloadUpdateInBackground(result.downloadUrl, result.fileName, (progress) => {
-            if (mainWindow) mainWindow.webContents.send('updater:progress', progress);
-          })
-          .then(({ fileName }) => {
-            downloadedFileName = fileName;
-            if (mainWindow) mainWindow.webContents.send('updater:downloaded', { version: result.latestVersion });
-          })
-          .catch((err) => {
-            if (mainWindow) mainWindow.webContents.send('updater:error', err.message);
-          });
-        }
       } else if (result.status === 'up-to-date') {
         if (mainWindow) mainWindow.webContents.send('updater:not-available', { version: result.currentVersion });
       } else {
@@ -74,6 +64,24 @@ function setupAutoUpdater() {
     } catch (err) {
       if (mainWindow) mainWindow.webContents.send('updater:error', err.message);
       return { status: 'error', message: err.message };
+    }
+  });
+
+  ipcMain.handle('updater:download', async () => {
+    if (!pendingUpdateInfo || !pendingUpdateInfo.downloadUrl || !pendingUpdateInfo.fileName) return;
+    try {
+      s3Updater.downloadUpdateInBackground(pendingUpdateInfo.downloadUrl, pendingUpdateInfo.fileName, (progress) => {
+        if (mainWindow) mainWindow.webContents.send('updater:progress', progress);
+      })
+      .then(({ fileName }) => {
+        downloadedFileName = fileName;
+        if (mainWindow) mainWindow.webContents.send('updater:downloaded', { version: pendingUpdateInfo.latestVersion });
+      })
+      .catch((err) => {
+        if (mainWindow) mainWindow.webContents.send('updater:error', err.message);
+      });
+    } catch (err) {
+      if (mainWindow) mainWindow.webContents.send('updater:error', err.message);
     }
   });
 
@@ -96,18 +104,9 @@ function setupAutoUpdater() {
     s3Updater.cleanupOldPackages();
     setTimeout(() => {
       s3Updater.checkLatestRelease().then((result) => {
-        if (result.status === 'update-available' && result.downloadUrl && result.fileName) {
+        if (result.status === 'update-available') {
+          pendingUpdateInfo = result;
           if (mainWindow) mainWindow.webContents.send('updater:available', { version: result.latestVersion });
-          s3Updater.downloadUpdateInBackground(result.downloadUrl, result.fileName, (progress) => {
-            if (mainWindow) mainWindow.webContents.send('updater:progress', progress);
-          })
-          .then(({ fileName }) => {
-            downloadedFileName = fileName;
-            if (mainWindow) mainWindow.webContents.send('updater:downloaded', { version: result.latestVersion });
-          })
-          .catch((err) => {
-            if (mainWindow) mainWindow.webContents.send('updater:error', err.message);
-          });
         }
       }).catch((err) => console.error('Auto check error:', err));
     }, 3000);

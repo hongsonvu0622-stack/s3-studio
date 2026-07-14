@@ -53,9 +53,21 @@ export default function AutoUpdateBanner() {
     };
   }, []);
 
+  const handleDownloadUpdate = () => {
+    if (window.confirm(`Phát hiện phiên bản mới v${updateInfo?.version || ''}. Bạn có đồng ý tải xuống bản cập nhật này không?`)) {
+      setStatus('downloading');
+      setProgress({ percent: 0 });
+      if (window.electronAPI?.startDownloadUpdate) {
+        window.electronAPI.startDownloadUpdate();
+      }
+    }
+  };
+
   const handleRestart = () => {
-    if (window.electronAPI?.restartAndInstallUpdate) {
-      window.electronAPI.restartAndInstallUpdate();
+    if (window.confirm(`Bản cập nhật v${updateInfo?.version || ''} đã sẵn sàng! Bạn có đồng ý đóng ứng dụng và cài đặt bản cập nhật ngay lập tức không?`)) {
+      if (window.electronAPI?.restartAndInstallUpdate) {
+        window.electronAPI.restartAndInstallUpdate();
+      }
     }
   };
 
@@ -68,7 +80,7 @@ export default function AutoUpdateBanner() {
           <>
             <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse flex-shrink-0" />
             <span>
-              Phát hiện phiên bản mới <strong>v{updateInfo?.version || 'Mới'}</strong>! Đang chuẩn bị tải xuống ngầm trong nền...
+              Phát hiện phiên bản mới <strong>v{updateInfo?.version || 'Mới'}</strong>! Bạn có muốn tải xuống và nâng cấp ngay không?
             </span>
           </>
         )}
@@ -114,6 +126,16 @@ export default function AutoUpdateBanner() {
       </div>
 
       <div className="flex items-center space-x-2">
+        {status === 'available' && (
+          <button
+            onClick={handleDownloadUpdate}
+            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-medium text-xs shadow-md shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <Download className="w-3.5 h-3.5 animate-bounce" />
+            <span>Tải & Cập nhật ngay</span>
+          </button>
+        )}
+
         {status === 'ready' && (
           <button
             onClick={handleRestart}
