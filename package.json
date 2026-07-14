@@ -45,7 +45,7 @@
       ]
     },
     "win": {
-      "icon": "public/logo.png",
+      "icon": "public/logo.ico",
       "target": [
         {
           "target": "nsis",
@@ -68,9 +68,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerIcon": "public/logo.png",
-      "uninstallerIcon": "public/logo.png",
-      "installerHeaderIcon": "public/logo.png"
+      "installerIcon": "public/logo.ico",
+      "uninstallerIcon": "public/logo.ico",
+      "installerHeaderIcon": "public/logo.ico"
     }
   },
   "dependencies": {
