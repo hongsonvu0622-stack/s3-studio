@@ -108,6 +108,7 @@ app.on('window-all-closed', () => {
 });
 
 function setupIpcHandlers() {
+  ipcMain.handle('s3:getAppVersion', () => app.getVersion());
   // Profiles
   ipcMain.handle('s3:getProfiles', () => s3Service.profiles);
   ipcMain.handle('s3:saveProfiles', (_, profiles) => s3Service.saveProfiles(profiles));

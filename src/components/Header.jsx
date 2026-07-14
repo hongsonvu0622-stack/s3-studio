@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Plus, RefreshCw, Server, Settings, ShieldCheck, Sun, Moon } from 'lucide-react';
 
 export default function Header({
@@ -11,6 +11,16 @@ export default function Header({
   theme,
   onToggleTheme
 }) {
+  const [appVersion, setAppVersion] = useState('1.0.0');
+
+  useEffect(() => {
+    if (window.electronAPI?.getAppVersion) {
+      window.electronAPI.getAppVersion()
+        .then((ver) => setAppVersion(ver || '1.0.0'))
+        .catch(() => {});
+    }
+  }, []);
+
   return (
     <header className="glass-header h-14 px-4 flex items-center justify-between shrink-0 select-none z-30">
       {/* Brand & Title */}
@@ -22,6 +32,12 @@ export default function Header({
           <span className="font-semibold text-base tracking-tight text-white">S3 Studio</span>
           <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-500/10 text-accent-400 border border-accent-500/20">
             S3 Storage
+          </span>
+          <span
+            className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-500/15 text-primary-300 border border-primary-500/30 shadow-sm"
+            title="Phiên bản ứng dụng đang chạy"
+          >
+            v{appVersion}
           </span>
         </div>
       </div>
