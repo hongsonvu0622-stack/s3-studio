@@ -99,8 +99,16 @@ export default function AutoUpdateBanner() {
 
         {status === 'error' && (
           <>
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-            <span className="text-red-200">Không thể tải bản cập nhật: {errorMessage}</span>
+            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <div className="flex flex-col text-xs">
+              {errorMessage?.includes('Code signature') || errorMessage?.includes('validation') || errorMessage?.includes('ShipIt') ? (
+                <span className="text-yellow-200 font-medium">
+                  ⚠️ macOS yêu cầu chữ ký Apple Developer ($99/năm) để tự động cập nhật bundle ngầm. Vui lòng nhấn nút tải bên phải (.dmg) để cài bản mới!
+                </span>
+              ) : (
+                <span className="text-red-200">Không thể tải bản cập nhật ngầm: {errorMessage}</span>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -113,6 +121,21 @@ export default function AutoUpdateBanner() {
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Khởi động lại ngay</span>
+          </button>
+        )}
+
+        {(status === 'error' || status === 'available') && (
+          <button
+            onClick={() => {
+              if (window.electronAPI?.openExternal) {
+                window.electronAPI.openExternal('https://github.com/hongsonvu0622-stack/s3-studio/releases/latest');
+              } else {
+                window.open('https://github.com/hongsonvu0622-stack/s3-studio/releases/latest', '_blank');
+              }
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-medium text-xs border border-white/20 transition-all shadow-sm"
+          >
+            <span>Tải trực tiếp từ GitHub (.dmg/.exe)</span>
           </button>
         )}
 

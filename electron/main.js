@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -108,6 +108,7 @@ app.on('window-all-closed', () => {
 });
 
 function setupIpcHandlers() {
+  ipcMain.handle('s3:openExternal', (_, url) => shell.openExternal(url));
   ipcMain.handle('s3:getAppVersion', () => app.getVersion());
   // Profiles
   ipcMain.handle('s3:getProfiles', () => s3Service.profiles);
