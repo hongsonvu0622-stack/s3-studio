@@ -36,11 +36,11 @@ function getBestAssetForPlatform(assets = []) {
   );
 
   if (platform === 'darwin') {
-    // Ưu tiên file dmg hoặc zip đúng kiến trúc arch (arm64 hoặc x64)
-    let matched = filteredAssets.find(a => a.name.includes(arch) && a.name.endsWith('.dmg'));
-    if (!matched) matched = filteredAssets.find(a => a.name.includes(arch) && a.name.endsWith('.zip'));
-    if (!matched) matched = filteredAssets.find(a => a.name.endsWith('.dmg'));
+    // Ưu tiên file zip trước vì ditto -x -k giải nén vào /Applications siêu nhanh, an toàn hơn hdiutil mount
+    let matched = filteredAssets.find(a => a.name.includes(arch) && a.name.endsWith('.zip'));
+    if (!matched) matched = filteredAssets.find(a => a.name.includes(arch) && a.name.endsWith('.dmg'));
     if (!matched) matched = filteredAssets.find(a => a.name.endsWith('.zip'));
+    if (!matched) matched = filteredAssets.find(a => a.name.endsWith('.dmg'));
     return matched;
   } else if (platform === 'win32') {
     // Ưu tiên Setup.exe
@@ -155,6 +155,8 @@ function cleanupOldPackages() {
 
 function downloadUpdateInBackground(downloadUrl, fileName, onProgress) {
   return new Promise((resolve, reject) => {
+    cleanupOldPackages(); // Dọn sạch tệp lỗi/dở dang cũ trước khi tải tệp mới
+
     if (!fs.existsSync(UPDATE_TEMP_DIR)) {
       fs.mkdirSync(UPDATE_TEMP_DIR, { recursive: true });
     }
@@ -187,8 +189,13 @@ function downloadUpdateInBackground(downloadUrl, fileName, onProgress) {
         res.pipe(fileStream);
 
         fileStream.on('finish', () => {
-          fileStream.close();
-          resolve({ success: true, filePath: targetPath, fileName });
+          fileStream.close(() => {
+            if (totalBytes > 0 && downloadedBytes < totalBytes) {
+              try { fs.unlinkSync(targetPath); } catch (e) {}
+              return reject(new Error(`Tải xuống bị ngắt quãng (chỉ tải được ${downloadedBytes}/${totalBytes} bytes). Vui lòng kiểm tra mạng và thử lại.`));
+            }
+            resolve({ success: true, filePath: targetPath, fileName });
+          });
         });
 
         fileStream.on('error', err => {
@@ -209,6 +216,14 @@ function installUpdateAndCleanup(fileName) {
       return reject(new Error('Tệp cập nhật không tồn tại hoặc đã bị xóa.'));
     }
 
+    try {
+      const stats = fs.statSync(filePath);
+      if (stats.size < 100000) { // < 100KB là file lỗi hoặc HTML response
+        fs.unlinkSync(filePath);
+        return reject(new Error('Tệp cập nhật bị lỗi hoặc tải không đầy đủ (<100KB). Hệ thống đã tự xóa tệp lỗi, vui lòng tải lại.'));
+      }
+    } catch (e) {}
+
     const platform = process.platform;
     let cmd = `open "${filePath}"`;
     if (platform === 'darwin') {
@@ -225,7 +240,8 @@ function installUpdateAndCleanup(fileName) {
 
     exec(cmd, (err) => {
       if (err) {
-        return reject(err);
+        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
+        return reject(new Error(`Lỗi cài đặt (${fileName}): ` + err.message));
       }
 
       setTimeout(() => {
