@@ -41,14 +41,19 @@ if [ -z "$TARGETS" ]; then
 fi
 echo "🎯 Mục tiêu build & upload: ${TARGETS}"
 
-# 5. Build giao diện web Vite
+# 5. Dọn dẹp thư mục cũ & Build giao diện web Vite
 echo ""
-echo "📦 [1/2] Đang biên dịch giao diện Web (Vite Build)..."
+echo "🧹 [1/3] Đang dọn dẹp thư mục build cũ (release & dist)..."
+rm -rf release dist
+
+echo ""
+echo "📦 [2/3] Đang biên dịch giao diện Web (Vite Build)..."
 npm run build
 
-# 6. Build Electron & tự động đẩy lên GitHub Releases
+# 6. Dọn dẹp assets cũ trên GitHub Release (nếu có) & Build Electron
 echo ""
-echo "☁️ [2/2] Đang đóng gói Electron và tải lên GitHub Releases (publish: always)..."
+echo "☁️ [3/3] Đang đóng gói Electron và tải lên GitHub Releases (publish: always)..."
+node scripts/clean-github-assets.js
 npx electron-builder ${TARGETS} --publish always
 
 echo ""
