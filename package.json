@@ -26,7 +26,8 @@
       {
         "provider": "github",
         "owner": "hongsonvu0622-stack",
-        "repo": "s3-studio"
+        "repo": "s3-studio",
+        "releaseType": "release"
       }
     ],
     "icon": "public/logo.png",
