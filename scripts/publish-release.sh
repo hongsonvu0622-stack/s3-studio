@@ -43,17 +43,13 @@ echo "🎯 Mục tiêu build & upload: ${TARGETS}"
 
 # 5. Dọn dẹp thư mục cũ & Build giao diện web Vite
 echo ""
-echo "🧹 [1/3] Đang dọn dẹp thư mục build cũ (release & dist)..."
+echo "🧹 [1/2] Đang dọn dẹp thư mục cũ và biên dịch giao diện Web (Vite Build)..."
 rm -rf release dist
-
-echo ""
-echo "📦 [2/3] Đang biên dịch giao diện Web (Vite Build)..."
 npm run build
 
-# 6. Dọn dẹp assets cũ trên GitHub Release (nếu có) & Build Electron
+# 6. Build Electron & tự động đẩy lên GitHub Releases
 echo ""
-echo "☁️ [3/3] Đang đóng gói Electron và tải lên GitHub Releases (publish: always)..."
-node scripts/clean-github-assets.js
+echo "☁️ [2/2] Đang đóng gói Electron và tải lên GitHub Releases (publish: always)..."
 npx electron-builder ${TARGETS} --publish always
 
 echo ""
