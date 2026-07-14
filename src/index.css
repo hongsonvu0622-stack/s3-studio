@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0a0d14;
+    --color-surface: #111726;
+    --color-surface-hover: #1a233a;
+    --color-border: #1f2b48;
+  }
+
+  /* Light mode palette */
+  html.light {
+    --color-bg: #f1f5f9;
+    --color-surface: #ffffff;
+    --color-surface-hover: #e2e8f0;
+    --color-border: #cbd5e1;
+  }
+
+  body {
+    @apply bg-background text-gray-100 font-['Inter'] antialiased transition-colors duration-200;
+    overflow: hidden;
+  }
+
+  html.light body {
+    color: #0f172a;
+  }
+
+  /* Text & background overrides in Light Mode for high contrast & elegance */
+  html.light .text-white {
+    color: #0f172a !important;
+  }
+
+  html.light .text-gray-100,
+  html.light .text-gray-200 {
+    color: #1e293b !important;
+  }
+
+  html.light .text-gray-300 {
+    color: #334155 !important;
+  }
+
+  html.light .text-gray-400 {
+    color: #64748b !important;
+  }
+
+  /* Keep primary/colored elements with white text */
+  html.light .bg-primary-600 .text-white,
+  html.light .bg-primary-500 .text-white,
+  html.light .bg-emerald-600 .text-white,
+  html.light .bg-red-600 .text-white,
+  html.light .bg-gradient-to-tr .text-white {
+    color: #ffffff !important;
+  }
+
+  html.light input,
+  html.light select,
+  html.light textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Table headers in Light Mode */
+  html.light thead {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.15);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.8);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(17, 23, 38, 0.78);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  html.light .glass-card {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  }
+
+  .glass-header {
+    background: rgba(10, 13, 20, 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  html.light .glass-header {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  }
+}
