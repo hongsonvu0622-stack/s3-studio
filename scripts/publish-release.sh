@@ -29,7 +29,8 @@ if [ -z "$GH_TOKEN" ]; then
   fi
 fi
 
-# 3. Lấy phiên bản hiện tại từ package.json
+# 3. Đồng bộ phiên bản từ .env (nếu có APP_VERSION)
+node scripts/sync-version.js
 VERSION=$(node -p "require('./package.json').version")
 echo "📌 Phiên bản chuẩn bị phát hành: v${VERSION}"
 

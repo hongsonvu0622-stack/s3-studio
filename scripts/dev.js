@@ -1,3 +1,4 @@
+import './sync-version.js';
 import { spawn } from 'child_process';
 import http from 'http';
 
