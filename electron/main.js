@@ -81,6 +81,12 @@ function setupAutoUpdater() {
     if (!downloadedFileName) return;
     try {
       await s3Updater.installUpdateAndCleanup(downloadedFileName);
+      if (process.platform === 'darwin') {
+        app.relaunch();
+        app.exit(0);
+      } else {
+        app.exit(0);
+      }
     } catch (err) {
       if (mainWindow) mainWindow.webContents.send('updater:error', 'Lỗi cài đặt: ' + err.message);
     }
