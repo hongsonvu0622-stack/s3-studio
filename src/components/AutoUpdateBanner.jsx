@@ -1,0 +1,129 @@
+import React, { useState, useEffect } from 'react';
+import { Download, RefreshCw, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+
+export default function AutoUpdateBanner() {
+  const [status, setStatus] = useState('idle'); // idle | checking | available | downloading | ready | error
+  const [progress, setProgress] = useState({ percent: 0 });
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!window.electronAPI) return;
+
+    const unsubChecking = window.electronAPI.onUpdaterChecking?.(() => {
+      setStatus('checking');
+      setDismissed(false);
+    });
+
+    const unsubAvailable = window.electronAPI.onUpdaterAvailable?.((info) => {
+      setStatus('available');
+      setUpdateInfo(info);
+      setDismissed(false);
+    });
+
+    const unsubNotAvailable = window.electronAPI.onUpdaterNotAvailable?.(() => {
+      setStatus('idle');
+    });
+
+    const unsubProgress = window.electronAPI.onUpdaterProgress?.((prog) => {
+      setStatus('downloading');
+      setProgress(prog || { percent: 0 });
+      setDismissed(false);
+    });
+
+    const unsubDownloaded = window.electronAPI.onUpdaterDownloaded?.((info) => {
+      setStatus('ready');
+      setUpdateInfo(info);
+      setDismissed(false);
+    });
+
+    const unsubError = window.electronAPI.onUpdaterError?.((err) => {
+      setStatus('error');
+      setErrorMessage(typeof err === 'string' ? err : err?.message || 'Lỗi kiểm tra cập nhật');
+    });
+
+    return () => {
+      unsubChecking?.();
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubProgress?.();
+      unsubDownloaded?.();
+      unsubError?.();
+    };
+  }, []);
+
+  const handleRestart = () => {
+    if (window.electronAPI?.restartAndInstallUpdate) {
+      window.electronAPI.restartAndInstallUpdate();
+    }
+  };
+
+  if (dismissed || status === 'idle' || status === 'checking') return null;
+
+  return (
+    <div className="z-50 px-4 py-2 bg-gradient-to-r from-primary-900/90 via-purple-900/90 to-primary-900/90 border-b border-primary-500/30 backdrop-blur-md text-white flex items-center justify-between shadow-lg animate-fade-in">
+      <div className="flex items-center space-x-3 text-sm">
+        {status === 'available' && (
+          <>
+            <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse flex-shrink-0" />
+            <span>
+              Phát hiện phiên bản mới <strong>v{updateInfo?.version || 'Mới'}</strong>! Đang chuẩn bị tải xuống ngầm trong nền...
+            </span>
+          </>
+        )}
+
+        {status === 'downloading' && (
+          <>
+            <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
+            <div className="flex items-center space-x-2">
+              <span>Đang tải bản cập nhật ngầm: <strong>{progress.percent ? `${progress.percent.toFixed(1)}%` : 'Đang tải...'}</strong></span>
+              <div className="w-24 bg-gray-700/60 rounded-full h-1.5 overflow-hidden border border-white/10">
+                <div
+                  className="bg-gradient-to-r from-cyan-400 to-purple-400 h-full transition-all duration-300 rounded-full"
+                  style={{ width: `${progress.percent || 0}%` }}
+                ></div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {status === 'ready' && (
+          <>
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 animate-bounce" />
+            <span>
+              🎉 Bản cập nhật <strong>v{updateInfo?.version || 'Mới'}</strong> đã tải xuống hoàn tất! Bạn có muốn khởi động lại ngay để áp dụng?
+            </span>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <span className="text-red-200">Không thể tải bản cập nhật: {errorMessage}</span>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center space-x-2">
+        {status === 'ready' && (
+          <button
+            onClick={handleRestart}
+            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-medium text-xs shadow-md shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Khởi động lại ngay</span>
+          </button>
+        )}
+
+        <button
+          onClick={() => setDismissed(true)}
+          className="p-1 rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+          title="Đóng thông báo"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}

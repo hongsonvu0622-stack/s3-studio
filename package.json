@@ -21,6 +21,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "hongsonvu0622-stack",
+        "repo": "s3-studio"
+      }
+    ],
     "icon": "public/logo.png",
     "files": [
       "dist/**/*",
@@ -69,6 +76,7 @@
     "@aws-sdk/client-s3": "^3.726.0",
     "@aws-sdk/lib-storage": "^3.726.0",
     "@aws-sdk/s3-request-presigner": "^3.726.0",
+    "electron-updater": "^6.8.9",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

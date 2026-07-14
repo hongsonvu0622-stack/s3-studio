@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Settings, RefreshCw, Zap } from 'lucide-react';
 import Header from './components/Header.jsx';
+import AutoUpdateBanner from './components/AutoUpdateBanner.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
 import BucketList from './components/BucketList.jsx';
 import ObjectExplorer from './components/ObjectExplorer.jsx';
@@ -456,6 +457,9 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
       />
+
+      {/* Auto-Update Banner */}
+      <AutoUpdateBanner />
 
       {/* Connection Error Banner */}
       {connectionError && (

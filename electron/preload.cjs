@@ -66,5 +66,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (event, data) => callback(data);
     ipcRenderer.on('transfer-completed', listener);
     return () => ipcRenderer.removeListener('transfer-completed', listener);
+  },
+
+  // Auto-Updater
+  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+  restartAndInstallUpdate: () => ipcRenderer.invoke('updater:restart'),
+  onUpdaterChecking: (cb) => {
+    const l = () => cb();
+    ipcRenderer.on('updater:checking', l);
+    return () => ipcRenderer.removeListener('updater:checking', l);
+  },
+  onUpdaterAvailable: (cb) => {
+    const l = (e, info) => cb(info);
+    ipcRenderer.on('updater:available', l);
+    return () => ipcRenderer.removeListener('updater:available', l);
+  },
+  onUpdaterNotAvailable: (cb) => {
+    const l = (e, info) => cb(info);
+    ipcRenderer.on('updater:not-available', l);
+    return () => ipcRenderer.removeListener('updater:not-available', l);
+  },
+  onUpdaterProgress: (cb) => {
+    const l = (e, progress) => cb(progress);
+    ipcRenderer.on('updater:progress', l);
+    return () => ipcRenderer.removeListener('updater:progress', l);
+  },
+  onUpdaterDownloaded: (cb) => {
+    const l = (e, info) => cb(info);
+    ipcRenderer.on('updater:downloaded', l);
+    return () => ipcRenderer.removeListener('updater:downloaded', l);
+  },
+  onUpdaterError: (cb) => {
+    const l = (e, err) => cb(err);
+    ipcRenderer.on('updater:error', l);
+    return () => ipcRenderer.removeListener('updater:error', l);
   }
 });

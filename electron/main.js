@@ -3,6 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import s3Service from './s3Service.js';
+import electronUpdater from 'electron-updater';
+const autoUpdater = electronUpdater.autoUpdater || electronUpdater;
 
 // Tắt cảnh báo bảo trì NodeVersionSupportWarning của AWS SDK v3
 process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1';
@@ -40,8 +42,60 @@ function createWindow() {
   }
 }
 
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    if (mainWindow) mainWindow.webContents.send('updater:checking');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('updater:available', info);
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('updater:not-available', info);
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    if (mainWindow) mainWindow.webContents.send('updater:progress', progressObj);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.webContents.send('updater:downloaded', info);
+  });
+
+  autoUpdater.on('error', (err) => {
+    if (mainWindow) mainWindow.webContents.send('updater:error', err.message || err.toString());
+  });
+
+  ipcMain.handle('updater:check', async () => {
+    if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+      return { status: 'dev-mode', message: 'Tự động cập nhật chỉ chạy trên bản cài đặt chính thức (.exe, .dmg).' };
+    }
+    try {
+      const res = await autoUpdater.checkForUpdates();
+      return { status: 'checking', res };
+    } catch (err) {
+      return { status: 'error', message: err.message };
+    }
+  });
+
+  ipcMain.handle('updater:restart', () => {
+    autoUpdater.quitAndInstall(false, true);
+  });
+
+  if (app.isPackaged) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => console.error('Auto update check failed:', err));
+    }, 3000);
+  }
+}
+
 app.whenReady().then(() => {
   setupIpcHandlers();
+  setupAutoUpdater();
   createWindow();
 
   app.on('activate', () => {
