@@ -6,7 +6,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
 const version = pkg.version;
-const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+
+let token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+const envPath = path.join(__dirname, '../.env');
+if (!token && fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  const match = envContent.match(/GH_TOKEN=(.*)/) || envContent.match(/GITHUB_TOKEN=(.*)/);
+  if (match && match[1]) {
+    token = match[1].trim().replace(/^['"]|['"]$/g, '');
+  }
+}
 
 async function cleanRemoteAssets() {
   if (!token) {
