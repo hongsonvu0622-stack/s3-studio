@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,6 +17,11 @@ function createWindow() {
   const iconPath = path.join(__dirname, fs.existsSync(path.join(__dirname, '../public/logo.png')) ? '../public/logo.png' : '../dist/logo.png');
   const isDev = process.env.NODE_ENV === 'development' || (!app.isPackaged && process.env.NODE_ENV !== 'production');
 
+  // Xóa bỏ hoàn toàn Application Menu mặc định (File, Edit, View, Window, Help)
+  if (!isDev) {
+    Menu.setApplicationMenu(null);
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -25,6 +30,7 @@ function createWindow() {
     title: 'S3 Studio - Cross-Platform S3 Explorer',
     icon: iconPath,
     backgroundColor: '#0a0d14',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -53,9 +59,10 @@ function createWindow() {
       mainWindow.webContents.closeDevTools();
     });
 
-    // Ẩn thanh menu bar mặc định trên Windows/Linux trong bản Release
+    // Xóa và ẩn hoàn toàn thanh menu bar trên Windows/Linux trong bản Release
     if (process.platform !== 'darwin') {
       mainWindow.setMenuBarVisibility(false);
+      mainWindow.removeMenu();
     }
   }
 }
