@@ -19,6 +19,7 @@
 
 ### 2. 🗂️ Trình Quản Lý Bucket & Đối Tượng (Bucket & Object Explorer)
 - **Điều hướng mượt mà**: Giao diện cây thư mục phân cấp rõ ràng, tích hợp thanh đường dẫn (Breadcrumbs) có thể nhấp chuột để di chuyển tức thì.
+- **Tìm kiếm tức thì**: Thanh tìm kiếm nhanh giúp lọc danh sách Bucket và Object trong tích tắc.
 - **Quản lý Bucket toàn diện**:
   - Tạo mới Bucket nhanh chóng với tùy chỉnh Region.
   - Xem và quản lý trạng thái **Versioning** của Bucket (xem trạng thái `Enabled`/`Suspended` và hỗ trợ kích hoạt/tạm dừng).
@@ -42,20 +43,13 @@
 
 ---
 
-### 4. 💽 Mount Ổ Đĩa S3 Vào Hệ Thống (Virtual Disk Mounting via Rclone & FUSE)
-- **Biến S3 thành ổ cứng cục bộ**: Gắn kết (`Mount`) trực tiếp Bucket S3 thành thư mục/ổ đĩa ảo trên **macOS Finder** và **Windows File Explorer**.
-- **Làm việc trực tiếp**: Mở, chỉnh sửa và lưu tệp tin S3 từ bất kỳ phần mềm nào (Word, Excel, VSCode, Photoshop, Premiere...) như khi làm việc trên ổ cứng vật lý.
-- **Tự động hóa nền**: Tự động quản lý tiến trình Rclone & macFUSE ngầm, hỗ trợ ngắt kết nối (`Unmount`) bằng một cú nhấp chuột hoặc tự động ngắt kết nối an toàn khi đóng ứng dụng.
-
----
-
-### 5. 🛡️ Bảo Mật & Trải Nghiệm Người Dùng (Safety & UI/UX)
+### 4. 🛡️ Bảo Mật & Trải Nghiệm Người Dùng (Safety & UI/UX)
 - **Giao diện Dark Mode Studio**: Thiết kế hiện đại, độ tương phản cao, hiệu ứng mượt mà và thông báo nhạy bén (Toast alerts).
 - **Cơ chế xác nhận 2 bước an toàn (`Two-Step Verification`)**: Áp dụng quy tắc bảo vệ nghiêm ngặt cho mọi thao tác nguy hiểm (xóa Bucket, xóa thư mục, xóa hàng loạt tệp tin), buộc người dùng xác nhận hoặc gõ chính xác tên để tránh tối đa các tai nạn mất mát dữ liệu.
 
 ---
 
-### 6. 🔄 Cập Nhật Tự Động Tại Chỗ & Hỗ Trợ macOS Gatekeeper (In-Place Auto Update)
+### 5. 🔄 Cập Nhật Tự Động Tại Chỗ & Hỗ Trợ macOS Gatekeeper (In-Place Auto Update)
 - **Tối ưu hóa cho macOS**: Chuyển đổi hoàn toàn cơ chế cập nhật từ `.dmg` sang gói nén `.zip` tải ngầm và tự động giải nén ghi đè tại chỗ (`In-Place Unzip`). Khắc phục triệt để lỗi Gatekeeper (*"App is damaged and can't be opened"*) trên macOS Ventura, Sonoma, Sequoia khi tải ứng dụng ngoài Mac App Store.
 - **Tôn trọng quyết định người dùng**: Hệ thống kiểm tra bản cập nhật mới, hiển thị thông tin và **luôn hỏi ý kiến người dùng** để xác nhận trước khi tiến hành cập nhật ứng dụng.
 
