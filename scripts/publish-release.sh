@@ -47,10 +47,15 @@ echo "🧹 [1/2] Đang dọn dẹp thư mục cũ và biên dịch giao diện W
 rm -rf release dist
 npm run build
 
-# 6. Build Electron & tự động đẩy lên GitHub Releases
+# 6. Build Electron & tự động đẩy lên GitHub Releases kèm Release Notes
 echo ""
 echo "☁️ [2/2] Đang đóng gói Electron và tải lên GitHub Releases (publish: always)..."
-npx electron-builder ${TARGETS} --publish always
+RELEASE_NOTES_OPT=""
+if [ -f "docs/RELEASE_NOTES.md" ]; then
+  echo "📝 Đã tìm thấy bản Release Notes: docs/RELEASE_NOTES.md (sẽ đính kèm vào release)"
+  RELEASE_NOTES_OPT="-c.releaseInfo.releaseNotesFile=docs/RELEASE_NOTES.md"
+fi
+npx electron-builder ${TARGETS} --publish always ${RELEASE_NOTES_OPT}
 
 echo ""
 echo "=========================================================="

@@ -19,6 +19,9 @@
   "build": {
     "appId": "com.s3studio.app",
     "productName": "S3 Studio",
+    "releaseInfo": {
+      "releaseNotesFile": "docs/RELEASE_NOTES.md"
+    },
     "directories": {
       "output": "release"
     },
