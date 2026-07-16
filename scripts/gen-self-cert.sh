@@ -23,17 +23,17 @@ if [ -f "$PFX_FILE" ] && [ -f "$CRT_FILE" ]; then
 else
   echo "⚡ [Self-Cert] Đang khởi tạo Private Key RSA 4096-bit & Chứng chỉ gốc X.509 (thời hạn 10 năm)..."
   
-  # 1. Tạo Private Key & Certificate .crt
-  openssl req -x509 -newkey rsa:4096 -keyout "$KEY_FILE" -out "$CRT_FILE" -days 3650 -nodes -subj "$SUBJ" 2>/dev/null
+  # 1. Tạo Private Key & Certificate .crt với thuộc tính Code Signing EKU (Extended Key Usage)
+  openssl req -x509 -newkey rsa:4096 -keyout "$KEY_FILE" -out "$CRT_FILE" -days 3650 -nodes -subj "$SUBJ" -addext "extendedKeyUsage = codeSigning" 2>/dev/null
   
   if [ $? -ne 0 ]; then
     echo "❌ [Self-Cert] Lỗi khi tạo chứng chỉ bằng OpenSSL. Hãy đảm bảo máy đã cài đặt OpenSSL."
     exit 1
   fi
 
-  # 2. Đóng gói thành file .pfx cho Windows Code Signing
+  # 2. Đóng gói thành file .pfx cho Windows & macOS Code Signing (hỗ trợ cờ tương thích Keychain)
   echo "📦 [Self-Cert] Đóng gói vào chứng chỉ PKCS#12 (${PFX_FILE})..."
-  openssl pkcs12 -export -out "$PFX_FILE" -inkey "$KEY_FILE" -in "$CRT_FILE" -passout "pass:${CERT_PASSWORD}" 2>/dev/null
+  openssl pkcs12 -export -out "$PFX_FILE" -inkey "$KEY_FILE" -in "$CRT_FILE" -passout "pass:${CERT_PASSWORD}" -legacy 2>/dev/null || openssl pkcs12 -export -out "$PFX_FILE" -inkey "$KEY_FILE" -in "$CRT_FILE" -passout "pass:${CERT_PASSWORD}" -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES 2>/dev/null
 
   if [ $? -ne 0 ]; then
     echo "❌ [Self-Cert] Lỗi khi xuất file .pfx."
@@ -64,12 +64,20 @@ else
   echo "✅ [Self-Cert] Đã tạo file .env mới với cấu hình CSC_LINK & CSC_KEY_PASSWORD."
 fi
 
-# 4. Hỗ trợ import chứng chỉ vào macOS Keychain (Tùy chọn cho người dùng Mac)
+# 4. Tự động nạp chứng chỉ vào macOS Keychain để hỗ trợ ký số trên Mac
 if [ "$(uname -s)" = "Darwin" ]; then
   echo ""
-  echo "🍎 [macOS Tip] Để macOS chấp nhận chữ ký số nội bộ (không báo lỗi Gatekeeper trên máy bạn):"
-  echo "   Chạy lệnh sau để thêm chứng chỉ vào keychain và tin cậy:"
-  echo "   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ${CRT_FILE}"
+  echo "🍎 [macOS Keychain] Đang tự động nạp chứng chỉ tự ký vào Keychain (login.keychain-db)..."
+  security import "$PFX_FILE" -k ~/Library/Keychains/login.keychain-db -P "${CERT_PASSWORD}" -T /usr/bin/codesign 2>/dev/null
+  
+  echo "📋 [macOS Identities] Các chứng chỉ Code Signing hiện có trên máy bạn:"
+  security find-identity -p codesigning | grep -i "S3 Studio Self-Signed" || true
+  
+  echo ""
+  echo "💡 [macOS Tip] Để macOS đánh dấu chứng chỉ này là TRỢ CHÍNH (Trusted/Valid Identity)"
+  echo "   giúp electron-builder hoặc macOS Gatekeeper tin cậy 100% trên máy này,"
+  echo "   bạn có thể chạy lệnh sau (hoặc mở Keychain Access -> Trust Always):"
+  echo "   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/login.keychain-db ${CRT_FILE}"
 fi
 
 echo ""

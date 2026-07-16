@@ -15,6 +15,8 @@ let mainWindow = null;
 
 function createWindow() {
   const iconPath = path.join(__dirname, fs.existsSync(path.join(__dirname, '../public/logo.png')) ? '../public/logo.png' : '../dist/logo.png');
+  const isDev = process.env.NODE_ENV === 'development' || (!app.isPackaged && process.env.NODE_ENV !== 'production');
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -26,18 +28,35 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      devTools: isDev
     }
   });
 
   s3Service.setMainWindow(mainWindow);
 
-  const isDev = process.env.NODE_ENV === 'development' || (!app.isPackaged && process.env.NODE_ENV !== 'production');
   if (isDev) {
     const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://127.0.0.1:5173';
     mainWindow.loadURL(devUrl);
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+
+    // Ngăn chặn mở DevTools bằng phím tắt (F12, Ctrl+Shift+I, Cmd+Option+I) trong bản Release
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.key === 'F12' || (input.shift && input.key.toLowerCase() === 'i' && (input.control || input.meta))) {
+        event.preventDefault();
+      }
+    });
+
+    // Nếu cố tình mở programmatic, tự động đóng DevTools ngay lập tức
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools();
+    });
+
+    // Ẩn thanh menu bar mặc định trên Windows/Linux trong bản Release
+    if (process.platform !== 'darwin') {
+      mainWindow.setMenuBarVisibility(false);
+    }
   }
 }
 
