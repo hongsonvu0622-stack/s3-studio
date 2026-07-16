@@ -720,14 +720,52 @@ class S3Service {
   }
 
   // ==================== MULTI-THREADED CONCURRENT TRANSFER QUEUE ====================
-  // Tối ưu hóa theo Rclone: Dynamic Part Size Calculation & Exponential Backoff Retry
+  // Tối ưu hóa theo chuẩn AWS/Rclone Enterprise: Tiered Dynamic Part Size & Queue Sizing
   calculateOptimalPartSize(fileSizeBytes) {
-    const minPartSize = 5 * 1024 * 1024; // 5 MB
-    const maxParts = 9500; // An toàn dưới 10,000 parts của S3
-    const calculated = Math.ceil(fileSizeBytes / maxParts);
-    if (calculated < minPartSize) return minPartSize;
-    if (fileSizeBytes > 10 * 1024 * 1024 * 1024) return 64 * 1024 * 1024; // 64MB cho file >10GB
-    return Math.max(minPartSize, calculated);
+    const minPartSize = 5 * 1024 * 1024; // 5 MB (S3 minimum part size)
+    const maxParts = 9500; // Giới hạn an toàn dưới 10,000 parts của S3
+
+    let partSize = minPartSize;
+
+    // Phân tầng theo kích thước file để tối ưu tốc độ và giảm overhead HTTP requests
+    if (fileSizeBytes > 100 * 1024 * 1024 * 1024) {
+      // > 100 GB -> 250 MB / part
+      partSize = 250 * 1024 * 1024;
+    } else if (fileSizeBytes > 50 * 1024 * 1024 * 1024) {
+      // 50 GB - 100 GB -> 128 MB / part
+      partSize = 128 * 1024 * 1024;
+    } else if (fileSizeBytes > 10 * 1024 * 1024 * 1024) {
+      // 10 GB - 50 GB -> 64 MB / part
+      partSize = 64 * 1024 * 1024;
+    } else if (fileSizeBytes > 2 * 1024 * 1024 * 1024) {
+      // 2 GB - 10 GB -> 32 MB / part
+      partSize = 32 * 1024 * 1024;
+    } else if (fileSizeBytes > 500 * 1024 * 1024) {
+      // 500 MB - 2 GB -> 16 MB / part
+      partSize = 16 * 1024 * 1024;
+    } else if (fileSizeBytes > 100 * 1024 * 1024) {
+      // 100 MB - 500 MB -> 10 MB / part
+      partSize = 10 * 1024 * 1024;
+    }
+
+    // Đảm bảo không bao giờ vượt quá 9,500 parts (giới hạn 10,000 của AWS S3)
+    const requiredMinForMaxParts = Math.ceil(fileSizeBytes / maxParts);
+    return Math.max(partSize, requiredMinForMaxParts);
+  }
+
+  // Tính toán số lượng luồng song song (queueSize) và stream buffer phù hợp với partSize để tránh tràn RAM
+  getOptimalUploadQueueOptions(partSize) {
+    let queueSize = 8;
+    if (partSize >= 128 * 1024 * 1024) {
+      queueSize = 3; // 3 * 128MB~250MB ~ 384MB - 750MB RAM
+    } else if (partSize >= 64 * 1024 * 1024) {
+      queueSize = 4; // 4 * 64MB ~ 256MB RAM
+    } else if (partSize >= 32 * 1024 * 1024) {
+      queueSize = 6; // 6 * 32MB ~ 192MB RAM
+    }
+    // Stream buffer (highWaterMark) nên bằng hoặc là ước số phù hợp của partSize, tối đa 16MB
+    const highWaterMark = Math.min(partSize, 16 * 1024 * 1024);
+    return { queueSize, highWaterMark };
   }
 
   setConcurrencyLevel(level) {
@@ -1001,9 +1039,10 @@ class S3Service {
           throw err;
         }
       } else {
+        const { queueSize, highWaterMark } = this.getOptimalUploadQueueOptions(optimalPartSize);
         task.totalParts = Math.ceil(task.size / optimalPartSize);
         task.completedParts = 0;
-        const fileStream = fs.createReadStream(task.filePath, { highWaterMark: 1024 * 1024 * 4 });
+        const fileStream = fs.createReadStream(task.filePath, { highWaterMark });
         const contentType = task.contentType || detectContentType(task.filePath);
 
         const parallelUploads3 = new Upload({
@@ -1015,7 +1054,7 @@ class S3Service {
             ContentLength: task.size,
             ContentType: contentType
           },
-          queueSize: 8, // 8 luồng song song
+          queueSize: queueSize,
           partSize: optimalPartSize
         });
 
