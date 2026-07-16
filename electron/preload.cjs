@@ -55,6 +55,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('s3:addUploadTask', bucketName, prefix, filePath),
   addDownloadTask: (bucketName, key, savePath) =>
     ipcRenderer.invoke('s3:addDownloadTask', bucketName, key, savePath),
+  addDownloadFolderTasks: (bucketName, folderPrefix, saveDir) =>
+    ipcRenderer.invoke('s3:addDownloadFolderTasks', bucketName, folderPrefix, saveDir),
   getTransferQueue: () => ipcRenderer.invoke('s3:getTransferQueue'),
   setConcurrencyLevel: (level) => ipcRenderer.invoke('s3:setConcurrencyLevel', level),
   cancelTask: (taskId) => ipcRenderer.invoke('s3:cancelTask', taskId),

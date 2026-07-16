@@ -34,6 +34,7 @@ export default function ObjectExplorer({
   onUploadFiles,
   onCreateFolder,
   onDownloadFile,
+  onDownloadFolder,
   onDeleteObjects,
   onRestoreVersion,
   onOpenPresignedModal,
@@ -346,6 +347,15 @@ export default function ObjectExplorer({
               <tr
                 key={f.key}
                 onClick={() => onNavigatePrefix(f.key)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setActiveMenu({
+                    item: f,
+                    isFolder: true,
+                    x: Math.min(e.clientX, window.innerWidth - 230),
+                    y: Math.min(e.clientY, window.innerHeight - 300)
+                  });
+                }}
                 className="hover:bg-surface/60 cursor-pointer transition-colors"
               >
                 <td className="p-3 text-center">
@@ -356,7 +366,18 @@ export default function ObjectExplorer({
                 <td className="p-3 text-gray-400">-</td>
                 <td className="p-3 text-gray-400">-</td>
                 <td className="p-3 text-gray-400">-</td>
-                <td className="p-3 text-right"></td>
+                <td className="p-3 text-right">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownloadFolder?.(f);
+                    }}
+                    className="p-1.5 rounded hover:bg-surface text-gray-400 hover:text-white transition-colors"
+                    title="Tải xuống toàn bộ thư mục"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
             ))}
 
@@ -521,114 +542,148 @@ export default function ObjectExplorer({
       </div>
 
       {/* Floating Context & Dropdown Menu */}
-      {activeMenu && activeMenu.file && (
+      {activeMenu && (activeMenu.file || activeMenu.isFolder) && (
         <div
           style={{ top: `${activeMenu.y}px`, left: `${activeMenu.x}px` }}
           className="fixed z-50 bg-surface/95 backdrop-blur-md border border-border rounded-xl shadow-2xl py-1.5 min-w-[210px] text-xs animate-fade-in"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-3 py-1.5 border-b border-border text-[11px] font-semibold text-gray-400 truncate max-w-[220px]">
-            {activeMenu.file.name}
-          </div>
-
-          {!activeMenu.file.deleteMarker && (
+          {activeMenu.isFolder && activeMenu.item ? (
             <>
-              <button
-                onClick={() => {
-                  onOpenPropertiesModal?.(activeMenu.file.key);
-                  setActiveMenu(null);
-                }}
-                className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
-              >
-                <Info className="w-4 h-4 text-primary-400" />
-                <span>Thuộc tính & Metadata</span>
-              </button>
+              <div className="px-3 py-1.5 border-b border-border text-[11px] font-semibold text-accent-400 truncate max-w-[220px]">
+                📁 {activeMenu.item.name}
+              </div>
 
               <button
                 onClick={() => {
-                  onDownloadFile(activeMenu.file);
+                  onDownloadFolder?.(activeMenu.item);
                   setActiveMenu(null);
                 }}
                 className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
               >
                 <Download className="w-4 h-4 text-primary-400" />
-                <span>Tải xuống tập tin</span>
+                <span>Tải xuống nguyên thư mục</span>
               </button>
 
               <button
                 onClick={() => {
-                  setCopyMoveModal({ isOpen: true, mode: 'COPY', file: activeMenu.file });
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(activeMenu.item.name);
+                  }
                   setActiveMenu(null);
                 }}
                 className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
               >
                 <Copy className="w-4 h-4 text-blue-400" />
-                <span>Sao chép tập tin</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setCopyMoveModal({ isOpen: true, mode: 'MOVE', file: activeMenu.file });
-                  setActiveMenu(null);
-                }}
-                className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
-              >
-                <FolderInput className="w-4 h-4 text-accent-400" />
-                <span>Di chuyển tập tin</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onOpenObjectAclModal?.(activeMenu.file);
-                  setActiveMenu(null);
-                }}
-                className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
-              >
-                <Shield className="w-4 h-4 text-emerald-400" />
-                <span>Phân quyền ACL</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onOpenPresignedModal(activeMenu.file);
-                  setActiveMenu(null);
-                }}
-                className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
-              >
-                <Share2 className="w-4 h-4 text-purple-400" />
-                <span>Tạo URL chia sẻ (Presigned)</span>
+                <span>Sao chép tên thư mục</span>
               </button>
             </>
-          )}
+          ) : activeMenu.file ? (
+            <>
+              <div className="px-3 py-1.5 border-b border-border text-[11px] font-semibold text-gray-400 truncate max-w-[220px]">
+                {activeMenu.file.name}
+              </div>
 
-          {showVersions && !activeMenu.file.isLatest && !activeMenu.file.deleteMarker && (
-            <button
-              onClick={() => {
-                onRestoreVersion(activeMenu.file);
-                setActiveMenu(null);
-              }}
-              className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
-            >
-              <RotateCcw className="w-4 h-4 text-emerald-400" />
-              <span>Khôi phục phiên bản</span>
-            </button>
-          )}
+              {!activeMenu.file.deleteMarker && (
+                <>
+                  <button
+                    onClick={() => {
+                      onOpenPropertiesModal?.(activeMenu.file.key);
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Info className="w-4 h-4 text-primary-400" />
+                    <span>Thuộc tính & Metadata</span>
+                  </button>
 
-          <div className="border-t border-border my-1" />
+                  <button
+                    onClick={() => {
+                      onDownloadFile(activeMenu.file);
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-primary-400" />
+                    <span>Tải xuống tập tin</span>
+                  </button>
 
-          <button
-            onClick={() => {
-              const fileToDelete = activeMenu.file;
-              setActiveMenu(null);
-              if (window.confirm(`Xóa ${fileToDelete.name}?`)) {
-                onDeleteObjects([{ Key: fileToDelete.key, VersionId: fileToDelete.versionId }]);
-              }
-            }}
-            className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-red-500/15 text-red-400 hover:text-red-300 transition-colors"
-          >
-            <Trash2 className="w-4 h-4 text-red-400" />
-            <span>Xóa tập tin</span>
-          </button>
+                  <button
+                    onClick={() => {
+                      setCopyMoveModal({ isOpen: true, mode: 'COPY', file: activeMenu.file });
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Copy className="w-4 h-4 text-blue-400" />
+                    <span>Sao chép tập tin</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCopyMoveModal({ isOpen: true, mode: 'MOVE', file: activeMenu.file });
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <FolderInput className="w-4 h-4 text-accent-400" />
+                    <span>Di chuyển tập tin</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onOpenObjectAclModal?.(activeMenu.file);
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <span>Phân quyền ACL</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onOpenPresignedModal(activeMenu.file);
+                      setActiveMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Share2 className="w-4 h-4 text-purple-400" />
+                    <span>Tạo URL chia sẻ (Presigned)</span>
+                  </button>
+                </>
+              )}
+
+              {showVersions && !activeMenu.file.isLatest && !activeMenu.file.deleteMarker && (
+                <button
+                  onClick={() => {
+                    onRestoreVersion(activeMenu.file);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4 text-emerald-400" />
+                  <span>Khôi phục phiên bản</span>
+                </button>
+              )}
+
+              <div className="border-t border-border my-1" />
+
+              <button
+                onClick={() => {
+                  const fileToDelete = activeMenu.file;
+                  setActiveMenu(null);
+                  if (window.confirm(`Xóa ${fileToDelete.name}?`)) {
+                    onDeleteObjects([{ Key: fileToDelete.key, VersionId: fileToDelete.versionId }]);
+                  }
+                }}
+                className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-red-500/15 text-red-400 hover:text-red-300 transition-colors"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+                <span>Xóa tập tin</span>
+              </button>
+            </>
+          ) : null}
         </div>
       )}
 

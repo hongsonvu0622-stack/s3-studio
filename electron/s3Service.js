@@ -818,6 +818,65 @@ class S3Service {
     return this.sanitizeTask(task);
   }
 
+  async addDownloadFolderTasks(bucketName, folderPrefix, saveDir) {
+    if (!this.client) throw new Error('No active connection');
+
+    const cleanPrefix = folderPrefix.endsWith('/') ? folderPrefix : `${folderPrefix}/`;
+    const folderSegments = cleanPrefix.split('/').filter(Boolean);
+    const folderName = folderSegments.length > 0 ? folderSegments[folderSegments.length - 1] : 'S3-Folder';
+
+    let continuationToken = undefined;
+    let addedCount = 0;
+    const addedTasks = [];
+
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: cleanPrefix,
+        Delimiter: '', // Không dùng delimiter để quét đệ quy toàn bộ thư mục & thư mục con
+        MaxKeys: 1000,
+        ContinuationToken: continuationToken
+      });
+      const res = await this.client.send(command);
+
+      const contents = res.Contents || [];
+      for (const item of contents) {
+        if (!item.Key || item.Key === cleanPrefix || item.Key.endsWith('/')) continue; // Bỏ qua folder marker
+
+        const relativePath = item.Key.slice(cleanPrefix.length);
+        const fullSavePath = path.join(saveDir, folderName, relativePath);
+
+        const task = {
+          id: `down-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+          type: 'DOWNLOAD',
+          bucket: bucketName,
+          key: item.Key,
+          filePath: fullSavePath,
+          size: item.Size || 0,
+          loaded: 0,
+          progress: 0,
+          speed: '0 KB/s',
+          status: 'pending',
+          error: null,
+          startTime: null
+        };
+
+        this.transferQueue.push(task);
+        addedTasks.push(this.sanitizeTask(task));
+        addedCount++;
+      }
+
+      continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    if (addedCount > 0) {
+      this.broadcastQueueStatus();
+      this.processQueue();
+    }
+
+    return { count: addedCount, folderName, tasks: addedTasks };
+  }
+
   async processQueue() {
     while (this.activeTransfers < this.concurrencyLevel) {
       const nextTask = this.transferQueue.find(t => t.status === 'pending');

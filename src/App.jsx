@@ -344,6 +344,24 @@ export default function App() {
     showToast(`Đã thêm "${file.name}" vào hàng đợi tải xuống!`, 'success');
   };
 
+  const handleDownloadFolder = async (folder) => {
+    if (!selectedBucket) return;
+    const saveDir = await window.electronAPI.selectSaveDirectory();
+    if (!saveDir) return;
+
+    try {
+      showToast(`Đang quét thư mục "${folder.name}"...`, 'info');
+      const result = await window.electronAPI.addDownloadFolderTasks(selectedBucket, folder.key, saveDir);
+      if (result && result.count === 0) {
+        showToast(`Thư mục "${folder.name}" hiện đang trống!`, 'info');
+      } else if (result && result.count > 0) {
+        showToast(`Đã thêm toàn bộ thư mục "${result.folderName}" (${result.count} tệp tin) vào hàng đợi tải xuống!`, 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Lỗi tải xuống thư mục!', 'error');
+    }
+  };
+
   const handleDeleteObjects = async (objectList) => {
     if (!selectedBucket || objectList.length === 0) return;
     try {
@@ -523,6 +541,7 @@ export default function App() {
           onUploadFiles={handleUploadFiles}
           onCreateFolder={handleCreateFolder}
           onDownloadFile={handleDownloadFile}
+          onDownloadFolder={handleDownloadFolder}
           onDeleteObjects={handleDeleteObjects}
           onRestoreVersion={handleRestoreVersion}
           onOpenPresignedModal={(file) => {
