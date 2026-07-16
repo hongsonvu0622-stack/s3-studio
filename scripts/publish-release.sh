@@ -57,6 +57,11 @@ if [ -f "docs/RELEASE_NOTES.md" ]; then
 fi
 npx electron-builder ${TARGETS} --publish always ${RELEASE_NOTES_OPT}
 
+# 7. Đảm bảo gán Release Notes chính thức lên GitHub API (phòng trường hợp electron-builder không overwrite body)
+echo ""
+echo "📝 [Release Notes] Đang đồng bộ nội dung Release Notes lên GitHub Release..."
+node scripts/attach-release-notes.js
+
 echo ""
 echo "=========================================================="
 echo "🎉 HOÀN TẤT PHÁT HÀNH PHIÊN BẢN v${VERSION}!"
