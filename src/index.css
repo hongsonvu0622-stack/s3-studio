@@ -42,7 +42,16 @@
   }
 
   html.light .text-gray-400 {
-    color: #64748b !important;
+    color: #475569 !important;
+  }
+
+  html.light .text-red-200,
+  html.light .text-red-300 {
+    color: #7f1d1d !important;
+  }
+
+  html.light .text-red-400 {
+    color: #991b1b !important;
   }
 
   /* Keep primary/colored elements with white text */
