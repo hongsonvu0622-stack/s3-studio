@@ -935,13 +935,21 @@ class S3Service {
   // Rclone Exponential Backoff Retry wrapper
   // Rclone Exponential Backoff Retry wrapper
   async executeTaskWithRetry(task, maxRetries = 3) {
+    if (task.status === 'canceled') return;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      if (task.status === 'canceled') return;
       try {
         await this.executeTask(task);
+        if (task.status === 'canceled') return;
         this.broadcastQueueStatus();
         return;
       } catch (err) {
-        if (task.status === 'canceled') return;
+        if (task.status === 'canceled' || err.name === 'AbortError' || err.message?.toLowerCase().includes('canceled') || err.message?.toLowerCase().includes('abort')) {
+          task.status = 'canceled';
+          task.speed = 'Đã hủy';
+          this.broadcastQueueStatus();
+          return;
+        }
         if (attempt === maxRetries) {
           console.error(`Task failed after ${maxRetries} attempts (${task.id}):`, err);
           task.status = 'failed';
@@ -1062,13 +1070,19 @@ class S3Service {
         });
       }
     } else if (task.type === 'DOWNLOAD') {
+      if (task.status === 'canceled') return;
+
+      const abortController = new AbortController();
+      task.abortController = abortController;
+
       const command = new GetObjectCommand({
         Bucket: task.bucket,
         Key: task.key
       });
-      const res = await this.client.send(command);
+      const res = await this.client.send(command, { abortSignal: abortController.signal });
       const totalSize = res.ContentLength || 0;
       task.size = totalSize;
+      task.resBody = res.Body;
 
       const dir = path.dirname(task.filePath);
       if (!fs.existsSync(dir)) {
@@ -1076,6 +1090,7 @@ class S3Service {
       }
 
       const writeStream = fs.createWriteStream(task.filePath);
+      task.writeStream = writeStream;
       let loaded = 0;
 
       await new Promise((resolve, reject) => {
@@ -1083,13 +1098,24 @@ class S3Service {
         const cleanup = (err) => {
           if (isSettled) return;
           isSettled = true;
-          if (err) {
-            fs.unlink(task.filePath, () => {});
+          if (err || task.status === 'canceled') {
+            if (res.Body && typeof res.Body.destroy === 'function') {
+              try { res.Body.destroy(); } catch (e) {}
+            }
+            if (writeStream && typeof writeStream.destroy === 'function') {
+              try { writeStream.destroy(); } catch (e) {}
+            }
+            if (fs.existsSync(task.filePath)) {
+              try { fs.unlink(task.filePath, () => {}); } catch (e) {}
+            }
           }
         };
 
         res.Body.on('data', (chunk) => {
-          if (isSettled) return;
+          if (isSettled || task.status === 'canceled') {
+            cleanup(new Error('Canceled by user'));
+            return;
+          }
           loaded += chunk.length;
           const now = Date.now();
           const timeDiff = (now - lastTime) / 1000;
@@ -1109,6 +1135,12 @@ class S3Service {
 
         writeStream.on('finish', () => {
           if (isSettled) return;
+          if (task.status === 'canceled') {
+            const err = new Error('Canceled by user');
+            cleanup(err);
+            reject(err);
+            return;
+          }
           if (totalSize > 0 && loaded < totalSize) {
             const err = new Error(`Tải xuống bị ngắt quãng: mới tải được ${loaded}/${totalSize} bytes`);
             cleanup(err);
@@ -1128,7 +1160,7 @@ class S3Service {
         res.Body.on('error', (err) => {
           if (isSettled) return;
           cleanup(err);
-          writeStream.destroy(err);
+          if (writeStream && typeof writeStream.destroy === 'function') writeStream.destroy(err);
           reject(err);
         });
       });
@@ -1185,7 +1217,7 @@ class S3Service {
       task.status = 'canceled';
       task.speed = 'Đã hủy';
 
-      // 1. Ngắt kết nối mạng cục bộ
+      // 1. Ngắt kết nối mạng cục bộ & stream đang chạy
       if (task.uploadController && typeof task.uploadController.abort === 'function') {
         try {
           task.uploadController.abort();
@@ -1197,8 +1229,23 @@ class S3Service {
         try {
           task.abortController.abort();
         } catch (e) {
-          console.error('Error aborting active single upload:', e);
+          console.error('Error aborting active single transfer:', e);
         }
+      }
+      if (task.resBody && typeof task.resBody.destroy === 'function') {
+        try {
+          task.resBody.destroy();
+        } catch (e) {}
+      }
+      if (task.writeStream && typeof task.writeStream.destroy === 'function') {
+        try {
+          task.writeStream.destroy();
+        } catch (e) {}
+      }
+      if (task.filePath && fs.existsSync(task.filePath)) {
+        try {
+          fs.unlink(task.filePath, () => {});
+        } catch (e) {}
       }
 
       this.broadcastQueueStatus();
