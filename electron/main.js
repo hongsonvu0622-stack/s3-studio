@@ -1,12 +1,10 @@
+import './suppress-warnings.js';
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import s3Service from './s3Service.js';
 import s3Updater from './s3Updater.js';
-
-// Tắt cảnh báo bảo trì NodeVersionSupportWarning của AWS SDK v3
-process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
