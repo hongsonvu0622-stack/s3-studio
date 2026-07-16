@@ -933,10 +933,12 @@ class S3Service {
   }
 
   // Rclone Exponential Backoff Retry wrapper
+  // Rclone Exponential Backoff Retry wrapper
   async executeTaskWithRetry(task, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.executeTask(task);
+        this.broadcastQueueStatus();
         return;
       } catch (err) {
         if (task.status === 'canceled') return;
@@ -1077,11 +1079,21 @@ class S3Service {
       let loaded = 0;
 
       await new Promise((resolve, reject) => {
+        let isSettled = false;
+        const cleanup = (err) => {
+          if (isSettled) return;
+          isSettled = true;
+          if (err) {
+            fs.unlink(task.filePath, () => {});
+          }
+        };
+
         res.Body.on('data', (chunk) => {
+          if (isSettled) return;
           loaded += chunk.length;
           const now = Date.now();
           const timeDiff = (now - lastTime) / 1000;
-          if (timeDiff >= 0.5 || loaded === totalSize) {
+          if (timeDiff >= 0.5 || (totalSize > 0 && loaded === totalSize)) {
             const byteDiff = loaded - lastLoaded;
             const speedBps = timeDiff > 0 ? byteDiff / timeDiff : 0;
             task.loaded = loaded;
@@ -1094,14 +1106,48 @@ class S3Service {
         });
 
         res.Body.pipe(writeStream);
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-        res.Body.on('error', reject);
+
+        writeStream.on('finish', () => {
+          if (isSettled) return;
+          if (totalSize > 0 && loaded < totalSize) {
+            const err = new Error(`Tải xuống bị ngắt quãng: mới tải được ${loaded}/${totalSize} bytes`);
+            cleanup(err);
+            reject(err);
+          } else {
+            cleanup(null);
+            resolve();
+          }
+        });
+
+        writeStream.on('error', (err) => {
+          if (isSettled) return;
+          cleanup(err);
+          reject(err);
+        });
+
+        res.Body.on('error', (err) => {
+          if (isSettled) return;
+          cleanup(err);
+          writeStream.destroy(err);
+          reject(err);
+        });
       });
+
+      if (task.status === 'canceled') return;
 
       task.status = 'completed';
       task.progress = 100;
-      task.speed = 'Completed';
+      task.loaded = task.size || loaded;
+      task.speed = 'Hoàn tất';
+      this.broadcastQueueStatus();
+
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('transfer-completed', {
+          bucket: task.bucket,
+          key: task.key,
+          type: task.type
+        });
+      }
     }
   }
 
