@@ -13,6 +13,7 @@ import PresignedUrlModal from './components/PresignedUrlModal.jsx';
 import ObjectPropertiesModal from './components/ObjectPropertiesModal.jsx';
 import TransferQueue from './components/TransferQueue.jsx';
 import ToastContainer, { showToast } from './components/Toast.jsx';
+import DeleteBucketModal from './components/DeleteBucketModal.jsx';
 
 export default function App() {
   // Theme state ('dark' or 'light')
@@ -70,6 +71,10 @@ export default function App() {
   const [presignedModalOpen, setPresignedModalOpen] = useState(false);
   const [propertiesModalOpen, setPropertiesModalOpen] = useState(false);
   const [targetObjectKey, setTargetObjectKey] = useState(null);
+
+  // Delete bucket verification state
+  const [deleteBucketModalOpen, setDeleteBucketModalOpen] = useState(false);
+  const [targetDeleteBucket, setTargetDeleteBucket] = useState(null);
 
   // Transfer Queue state
   const [transferQueue, setTransferQueue] = useState([]);
@@ -537,7 +542,10 @@ export default function App() {
           selectedBucket={selectedBucket}
           onSelectBucket={handleSelectBucket}
           onCreateBucket={handleCreateBucket}
-          onDeleteBucket={handleDeleteBucket}
+          onDeleteBucket={(bucketName) => {
+            setTargetDeleteBucket(bucketName);
+            setDeleteBucketModalOpen(true);
+          }}
           onOpenVersioningModal={() => setVersioningModalOpen(true)}
           onOpenAclModal={() => {
             setTargetObjectKey(null);
@@ -663,6 +671,17 @@ export default function App() {
         onClose={() => setPropertiesModalOpen(false)}
         bucket={selectedBucket}
         objectKey={targetObjectKey}
+      />
+
+      {/* Delete Bucket 2-Step Verification Modal */}
+      <DeleteBucketModal
+        isOpen={deleteBucketModalOpen}
+        onClose={() => {
+          setDeleteBucketModalOpen(false);
+          setTargetDeleteBucket(null);
+        }}
+        bucketName={targetDeleteBucket}
+        onDelete={handleDeleteBucket}
       />
 
       {/* Global Toast Notification Container */}

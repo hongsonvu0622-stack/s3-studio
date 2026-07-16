@@ -146,9 +146,7 @@ export default function BucketList({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`Bạn có chắc muốn xóa Bucket "${b.name}" không?`)) {
-                      onDeleteBucket(b.name);
-                    }
+                    onDeleteBucket(b.name);
                   }}
                   className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-400 transition-opacity"
                   title="Xóa Bucket"
@@ -276,9 +274,7 @@ export default function BucketList({
             onClick={() => {
               const bToDelete = activeBucketMenu.bucket.name;
               setActiveBucketMenu(null);
-              if (confirm(`Bạn có chắc muốn xóa Bucket "${bToDelete}" không?`)) {
-                onDeleteBucket(bToDelete);
-              }
+              onDeleteBucket(bToDelete);
             }}
             className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-red-500/15 text-red-400 hover:text-red-300 transition-colors"
           >

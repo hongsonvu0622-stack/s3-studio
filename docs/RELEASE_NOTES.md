@@ -45,7 +45,7 @@
 
 ### 4. 🛡️ Bảo Mật & Trải Nghiệm Người Dùng (Safety & UI/UX)
 - **Giao diện Dark Mode Studio**: Thiết kế hiện đại, độ tương phản cao, hiệu ứng mượt mà và thông báo nhạy bén (Toast alerts).
-- **Cơ chế xác nhận 2 bước an toàn (`Two-Step Verification`)**: Áp dụng quy tắc bảo vệ nghiêm ngặt cho mọi thao tác nguy hiểm (xóa Bucket, xóa thư mục, xóa hàng loạt tệp tin), buộc người dùng xác nhận hoặc gõ chính xác tên để tránh tối đa các tai nạn mất mát dữ liệu.
+- **Cơ chế xác nhận 2 bước an toàn (`Two-Step Verification`)**: Áp dụng quy tắc bảo vệ nghiêm ngặt cho thao tác nguy hiểm **Xóa Bucket**, buộc người dùng vừa tích chọn xác nhận rủi ro vừa phải gõ chính xác tên Bucket vào hộp thoại bảo vệ để tránh tối đa các tai nạn xóa nhầm mất mát dữ liệu.
 
 ---
 
