@@ -10,7 +10,7 @@ export default function ProfileModal({ isOpen, onClose, profiles, onSaveProfiles
       id: '',
       name: '',
       endpoint: '',
-      region: 'us-east-1',
+      region: 'default',
       accessKeyId: '',
       secretAccessKey: '',
       forcePathStyle: true,
@@ -26,7 +26,7 @@ export default function ProfileModal({ isOpen, onClose, profiles, onSaveProfiles
       id: `p-${Date.now()}`,
       name: 'New S3 Profile',
       endpoint: '',
-      region: 'us-east-1',
+      region: 'default',
       accessKeyId: '',
       secretAccessKey: '',
       forcePathStyle: true,
@@ -232,7 +232,7 @@ export default function ProfileModal({ isOpen, onClose, profiles, onSaveProfiles
                   type="text"
                   value={editingProfile.region || ''}
                   onChange={(e) => setEditingProfile({ ...editingProfile, region: e.target.value })}
-                  placeholder="us-east-1"
+                  placeholder="default"
                   className="w-full bg-surface border border-border rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
                 />
               </div>

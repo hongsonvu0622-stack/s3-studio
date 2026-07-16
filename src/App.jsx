@@ -278,7 +278,7 @@ export default function App() {
 
   const handleCreateBucket = async (bucketName) => {
     try {
-      await window.electronAPI.createBucket(bucketName, currentProfile?.region || 'us-east-1');
+      await window.electronAPI.createBucket(bucketName, currentProfile?.region || 'default');
       await loadBuckets();
       showToast(`Tạo Bucket "${bucketName}" thành công!`, 'success');
     } catch (err) {

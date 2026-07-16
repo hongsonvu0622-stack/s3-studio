@@ -145,7 +145,7 @@ class S3Service {
             id: 'demo-s3',
             name: 'AWS S3 / Compatible Storage',
             endpoint: 'http://localhost:8000',
-            region: 'us-east-1',
+            region: 'default',
             accessKeyId: 'demo',
             secretAccessKey: 'demo',
             forcePathStyle: true,
@@ -195,7 +195,7 @@ class S3Service {
           name: sectionMatch[1],
           type: '',
           endpoint: '',
-          region: 'us-east-1',
+          region: 'default',
           accessKeyId: '',
           secretAccessKey: '',
           forcePathStyle: true,
@@ -248,9 +248,9 @@ class S3Service {
       }
     }
 
-    let region = profile.region || 'us-east-1';
-    if (region.trim().toLowerCase() === 'default' || region.trim() === '') {
-      region = 'us-east-1';
+    let region = profile.region || 'default';
+    if (region.trim() === '') {
+      region = 'default';
     }
 
     const config = {
