@@ -107,3 +107,9 @@ win-arm64-unpacked/
 *.7z
 *.blockmap
 *.exe
+
+# Code Signing Certificates & Keys
+certs/
+*.pfx
+*.p12
+*.key

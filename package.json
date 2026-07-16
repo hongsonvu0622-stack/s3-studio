@@ -14,7 +14,8 @@
     "pack:win": "vite build && electron-builder --win --ia32 --x64",
     "pack:win-ia32": "vite build && electron-builder --win --ia32",
     "pack:win-x64": "vite build && electron-builder --win --x64",
-    "release": "bash scripts/publish-release.sh"
+    "release": "bash scripts/publish-release.sh",
+    "gen-cert": "bash scripts/gen-self-cert.sh"
   },
   "build": {
     "appId": "com.s3studio.app",
