@@ -206,6 +206,9 @@ function setupIpcHandlers() {
   ipcMain.handle('s3:addDownloadFolderTasks', (_, bucket, folderPrefix, saveDir) =>
     s3Service.addDownloadFolderTasks(bucket, folderPrefix, saveDir)
   );
+  ipcMain.handle('s3:addDownloadTasksBatch', (_, bucket, objectList, saveDir, prefix) =>
+    s3Service.addDownloadTasksBatch(bucket, objectList, saveDir, prefix)
+  );
   ipcMain.handle('s3:getTransferQueue', () => s3Service.getTransferQueue());
   ipcMain.handle('s3:setConcurrencyLevel', (_, level) => s3Service.setConcurrencyLevel(level));
   ipcMain.handle('s3:cancelTask', (_, id) => s3Service.cancelTask(id));

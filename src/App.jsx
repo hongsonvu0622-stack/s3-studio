@@ -362,6 +362,24 @@ export default function App() {
     }
   };
 
+  const handleDownloadFiles = async (selectedList) => {
+    if (!selectedBucket || !selectedList || selectedList.length === 0) return;
+    const saveDir = await window.electronAPI.selectSaveDirectory();
+    if (!saveDir) return;
+
+    try {
+      showToast(`Đang chuẩn bị hàng đợi cho ${selectedList.length} tệp tin...`, 'info');
+      const result = await window.electronAPI.addDownloadTasksBatch(selectedBucket, selectedList, saveDir, prefix);
+      if (result && result.count > 0) {
+        showToast(`Đã thêm ${result.count} tệp tin vào hàng đợi tải xuống!`, 'success');
+      } else {
+        showToast(`Không có tệp hợp lệ nào được thêm vào hàng đợi!`, 'info');
+      }
+    } catch (err) {
+      showToast(err.message || 'Lỗi tải xuống nhiều tệp!', 'error');
+    }
+  };
+
   const handleDeleteObjects = async (objectList) => {
     if (!selectedBucket || objectList.length === 0) return;
     try {
@@ -542,6 +560,7 @@ export default function App() {
           onCreateFolder={handleCreateFolder}
           onDownloadFile={handleDownloadFile}
           onDownloadFolder={handleDownloadFolder}
+          onDownloadFiles={handleDownloadFiles}
           onDeleteObjects={handleDeleteObjects}
           onRestoreVersion={handleRestoreVersion}
           onOpenPresignedModal={(file) => {

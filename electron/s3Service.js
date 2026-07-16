@@ -877,6 +877,48 @@ class S3Service {
     return { count: addedCount, folderName, tasks: addedTasks };
   }
 
+  async addDownloadTasksBatch(bucketName, objectList, saveDir, prefix = '') {
+    if (!this.client) throw new Error('No active connection');
+
+    let addedCount = 0;
+    const addedTasks = [];
+
+    for (const item of objectList) {
+      const key = typeof item === 'string' ? item : item.Key || item.key;
+      if (!key || key.endsWith('/')) continue;
+
+      let relativePath = (prefix && key.startsWith(prefix)) ? key.slice(prefix.length) : key.split('/').pop();
+      if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
+      const fullSavePath = path.join(saveDir, relativePath);
+
+      const task = {
+        id: `down-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        type: 'DOWNLOAD',
+        bucket: bucketName,
+        key,
+        filePath: fullSavePath,
+        size: item.Size || item.size || 0,
+        loaded: 0,
+        progress: 0,
+        speed: '0 KB/s',
+        status: 'pending',
+        error: null,
+        startTime: null
+      };
+
+      this.transferQueue.push(task);
+      addedTasks.push(this.sanitizeTask(task));
+      addedCount++;
+    }
+
+    if (addedCount > 0) {
+      this.broadcastQueueStatus();
+      this.processQueue();
+    }
+
+    return { count: addedCount, tasks: addedTasks };
+  }
+
   async processQueue() {
     while (this.activeTransfers < this.concurrencyLevel) {
       const nextTask = this.transferQueue.find(t => t.status === 'pending');

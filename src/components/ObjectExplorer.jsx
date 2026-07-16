@@ -35,6 +35,7 @@ export default function ObjectExplorer({
   onCreateFolder,
   onDownloadFile,
   onDownloadFolder,
+  onDownloadFiles,
   onDeleteObjects,
   onRestoreVersion,
   onOpenPresignedModal,
@@ -235,18 +236,35 @@ export default function ObjectExplorer({
             </button>
 
             {selectedKeys.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm(`Xóa ${selectedKeys.length} mục đã chọn?`)) {
-                    onDeleteObjects(selectedKeys);
+              <>
+                <button
+                  onClick={() => {
+                    const fullSelectedFiles = selectedKeys.map(sk => {
+                      const found = filteredFiles.find(f => f.key === sk.Key && f.versionId === sk.VersionId);
+                      return found ? { Key: sk.Key, VersionId: sk.VersionId, Size: found.size } : sk;
+                    });
+                    onDownloadFiles?.(fullSelectedFiles);
                     setSelectedKeys([]);
-                  }
-                }}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-xs font-medium text-red-300 hover:text-white transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Xóa mục đã chọn ({selectedKeys.length})</span>
-              </button>
+                  }}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-primary-600/20 hover:bg-primary-600 border border-primary-500/40 text-xs font-medium text-primary-300 hover:text-white transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4 animate-bounce" />
+                  <span>Tải mục đã chọn ({selectedKeys.length})</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (confirm(`Xóa ${selectedKeys.length} mục đã chọn?`)) {
+                      onDeleteObjects(selectedKeys);
+                      setSelectedKeys([]);
+                    }
+                  }}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-xs font-medium text-red-300 hover:text-white transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Xóa mục đã chọn ({selectedKeys.length})</span>
+                </button>
+              </>
             )}
           </div>
 
