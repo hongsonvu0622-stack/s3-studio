@@ -120,7 +120,7 @@ class S3Service {
     this.profiles = [];
     this.transferQueue = [];
     this.activeTransfers = 0;
-    this.concurrencyLevel = 5;
+    this.concurrencyLevel = this.calculateOptimalDeviceConcurrency();
     this.mainWindow = null;
     this.loadProfiles();
   }
@@ -720,32 +720,57 @@ class S3Service {
   }
 
   // ==================== MULTI-THREADED CONCURRENT TRANSFER QUEUE ====================
-  // Tối ưu hóa theo chuẩn AWS/Rclone Enterprise: Tiered Dynamic Part Size & Queue Sizing
+  // ==================== DEVICE HARDWARE PROFILING & ADAPTIVE CONCURRENCY ====================
+  getDeviceSpecs() {
+    const totalRamGB = os.totalmem() / (1024 * 1024 * 1024);
+    const freeRamGB = os.freemem() / (1024 * 1024 * 1024);
+    const cpuCores = os.cpus().length || 4;
+    return { totalRamGB, freeRamGB, cpuCores };
+  }
+
+  calculateOptimalDeviceConcurrency() {
+    const { totalRamGB, cpuCores } = this.getDeviceSpecs();
+    if (totalRamGB >= 32 && cpuCores >= 12) {
+      return 10; // Máy trạm / Mac Studio / High-end PC (32GB+ RAM, 12+ cores)
+    } else if (totalRamGB >= 16 && cpuCores >= 8) {
+      return 8;  // Laptop/PC cấu hình mạnh (16GB+ RAM, 8+ cores)
+    } else if (totalRamGB >= 8 && cpuCores >= 4) {
+      return 5;  // Máy tiêu chuẩn (8GB RAM, 4+ cores)
+    }
+    return 3;    // Máy cấu hình khiêm tốn (<8GB RAM)
+  }
+
+  // Tối ưu hóa theo chuẩn AWS/Rclone Enterprise: Tiered Dynamic Part Size kết hợp Cấu hình Phần cứng (RAM + CPU)
   calculateOptimalPartSize(fileSizeBytes) {
     const minPartSize = 5 * 1024 * 1024; // 5 MB (S3 minimum part size)
     const maxParts = 9500; // Giới hạn an toàn dưới 10,000 parts của S3
+    const { totalRamGB, freeRamGB } = this.getDeviceSpecs();
 
     let partSize = minPartSize;
 
-    // Phân tầng theo kích thước file để tối ưu tốc độ và giảm overhead HTTP requests
+    // Phân tầng cơ bản theo kích thước file để tối ưu tốc độ và giảm overhead HTTP requests
     if (fileSizeBytes > 100 * 1024 * 1024 * 1024) {
-      // > 100 GB -> 250 MB / part
       partSize = 250 * 1024 * 1024;
     } else if (fileSizeBytes > 50 * 1024 * 1024 * 1024) {
-      // 50 GB - 100 GB -> 128 MB / part
       partSize = 128 * 1024 * 1024;
     } else if (fileSizeBytes > 10 * 1024 * 1024 * 1024) {
-      // 10 GB - 50 GB -> 64 MB / part
       partSize = 64 * 1024 * 1024;
     } else if (fileSizeBytes > 2 * 1024 * 1024 * 1024) {
-      // 2 GB - 10 GB -> 32 MB / part
       partSize = 32 * 1024 * 1024;
     } else if (fileSizeBytes > 500 * 1024 * 1024) {
-      // 500 MB - 2 GB -> 16 MB / part
       partSize = 16 * 1024 * 1024;
     } else if (fileSizeBytes > 100 * 1024 * 1024) {
-      // 100 MB - 500 MB -> 10 MB / part
       partSize = 10 * 1024 * 1024;
+    }
+
+    // Tự động điều chỉnh theo sức mạnh thiết bị:
+    // 1. Nếu máy cấu hình mạnh (Tổng RAM >= 16GB VÀ RAM trống >= 6GB), nhân đôi partSize cho file > 1GB để tận dụng tối đa băng thông và giảm requests
+    if (totalRamGB >= 16 && freeRamGB >= 6 && fileSizeBytes > 1024 * 1024 * 1024 && partSize < 250 * 1024 * 1024) {
+      partSize = Math.min(250 * 1024 * 1024, partSize * 2);
+    }
+    // 2. Nếu máy có RAM trống đang cạn kiệt (< 2GB free RAM), giới hạn partSize tối đa 32MB để bảo vệ hệ thống không bị đơ/lag
+    if (freeRamGB < 2.0) {
+      partSize = Math.min(partSize, 32 * 1024 * 1024);
     }
 
     // Đảm bảo không bao giờ vượt quá 9,500 parts (giới hạn 10,000 của AWS S3)
@@ -753,16 +778,27 @@ class S3Service {
     return Math.max(partSize, requiredMinForMaxParts);
   }
 
-  // Tính toán số lượng luồng song song (queueSize) và stream buffer phù hợp với partSize để tránh tràn RAM
+  // Tính toán số lượng luồng song song (queueSize) và stream buffer phù hợp với partSize & cấu hình máy thực tế
   getOptimalUploadQueueOptions(partSize) {
-    let queueSize = 8;
+    const { totalRamGB, freeRamGB, cpuCores } = this.getDeviceSpecs();
+
+    // Mặc định dựa trên CPU (mỗi luồng upload dùng 1-2 core I/O)
+    let queueSize = Math.min(12, Math.max(4, Math.floor(cpuCores * 0.75)));
+
+    // Điều chỉnh theo partSize và tổng RAM thiết bị
     if (partSize >= 128 * 1024 * 1024) {
-      queueSize = 3; // 3 * 128MB~250MB ~ 384MB - 750MB RAM
+      queueSize = totalRamGB >= 32 ? 4 : 2; // Máy 32GB+ RAM dùng 4 luồng 128MB (~512MB RAM), máy thường dùng 2 luồng
     } else if (partSize >= 64 * 1024 * 1024) {
-      queueSize = 4; // 4 * 64MB ~ 256MB RAM
+      queueSize = totalRamGB >= 16 ? 5 : 3;
     } else if (partSize >= 32 * 1024 * 1024) {
-      queueSize = 6; // 6 * 32MB ~ 192MB RAM
+      queueSize = totalRamGB >= 16 ? 8 : 4;
     }
+
+    // Bảo vệ khẩn cấp: Nếu RAM trống < 2GB, buộc giảm queueSize về 2 luồng để an toàn tuyệt đối
+    if (freeRamGB < 2.0) {
+      queueSize = Math.min(queueSize, 2);
+    }
+
     // Stream buffer (highWaterMark) nên bằng hoặc là ước số phù hợp của partSize, tối đa 16MB
     const highWaterMark = Math.min(partSize, 16 * 1024 * 1024);
     return { queueSize, highWaterMark };
