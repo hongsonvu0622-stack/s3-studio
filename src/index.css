@@ -133,23 +133,33 @@ html.light .text-purple-400 {
   color: #7c3aed !important; /* purple-600 */
 }
 
-/* Keep primary/colored buttons, headers, and badges with crisp white text */
-html.light [class*="bg-primary-"].text-white,
-html.light [class*="bg-primary-"] .text-white,
-html.light [class*="bg-indigo-"].text-white,
-html.light [class*="bg-indigo-"] .text-white,
-html.light [class*="bg-blue-"].text-white,
-html.light [class*="bg-blue-"] .text-white,
-html.light [class*="bg-emerald-"].text-white,
-html.light [class*="bg-emerald-"] .text-white,
-html.light [class*="bg-red-"].text-white,
-html.light [class*="bg-red-"] .text-white,
-html.light [class*="bg-amber-"].text-white,
-html.light [class*="bg-amber-"] .text-white,
-html.light [class*="bg-purple-"].text-white,
-html.light [class*="bg-purple-"] .text-white,
-html.light [class*="bg-gradient-"].text-white,
-html.light [class*="bg-gradient-"] .text-white {
+/* Keep solid primary/colored buttons & badges with crisp white text without accidentally matching body selection or gradients */
+html.light button[class*="bg-primary"],
+html.light button[class*="bg-primary"] *,
+html.light a[class*="bg-primary"],
+html.light a[class*="bg-primary"] *,
+html.light button[class*="bg-indigo"],
+html.light button[class*="bg-indigo"] *,
+html.light button[class*="bg-blue"],
+html.light button[class*="bg-blue"] *,
+html.light button[class*="bg-emerald"],
+html.light button[class*="bg-emerald"] *,
+html.light button[class*="bg-red"],
+html.light button[class*="bg-red"] *,
+html.light button[class*="bg-amber"],
+html.light button[class*="bg-amber"] *,
+html.light button[class*="bg-purple"],
+html.light button[class*="bg-purple"] *,
+html.light button[class*="bg-gradient"],
+html.light button[class*="bg-gradient"] *,
+html.light [class*="bg-primary-600"],
+html.light [class*="bg-primary-500"],
+html.light [class*="bg-indigo-600"],
+html.light [class*="bg-blue-600"],
+html.light [class*="bg-emerald-600"],
+html.light [class*="bg-red-600"],
+html.light [class*="bg-amber-600"],
+html.light [class*="bg-purple-600"] {
   color: #ffffff !important;
 }
 
