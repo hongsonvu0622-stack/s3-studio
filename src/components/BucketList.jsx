@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Plus, Search, Trash2, FolderGit2, Shield, FileText, Activity, MoreVertical } from 'lucide-react';
+import { Database, Plus, Search, Trash2, FolderGit2, Shield, FileText, Activity, MoreVertical, Globe } from 'lucide-react';
 
 export default function BucketList({
   buckets,
@@ -10,7 +10,8 @@ export default function BucketList({
   onOpenPolicyModal,
   onOpenAclModal,
   onOpenLifecycleModal,
-  onOpenVersioningModal
+  onOpenVersioningModal,
+  onOpenCorsModal
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [newBucketName, setNewBucketName] = useState('');
@@ -194,6 +195,13 @@ export default function BucketList({
               <Activity className="w-3.5 h-3.5 text-purple-400" />
               <span>Lifecycle</span>
             </button>
+            <button
+              onClick={onOpenCorsModal}
+              className="col-span-2 flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-surface hover:bg-surface-hover border border-border text-xs text-gray-300 hover:text-white transition-colors"
+            >
+              <Globe className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Cấu hình CORS</span>
+            </button>
           </div>
         </div>
       )}
@@ -266,6 +274,18 @@ export default function BucketList({
           >
             <Activity className="w-4 h-4 text-purple-400" />
             <span>Lifecycle Rules</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectBucket(activeBucketMenu.bucket.name);
+              setActiveBucketMenu(null);
+              setTimeout(() => onOpenCorsModal?.(), 50);
+            }}
+            className="w-full px-3 py-2 text-left flex items-center space-x-2.5 hover:bg-surface-hover text-gray-200 hover:text-white transition-colors"
+          >
+            <Globe className="w-4 h-4 text-indigo-400" />
+            <span>Cấu hình CORS</span>
           </button>
 
           <div className="border-t border-border my-1" />

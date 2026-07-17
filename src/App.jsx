@@ -9,6 +9,7 @@ import VersioningModal from './components/VersioningModal.jsx';
 import AclModal from './components/AclModal.jsx';
 import PolicyEditorModal from './components/PolicyEditorModal.jsx';
 import LifecycleModal from './components/LifecycleModal.jsx';
+import CorsModal from './components/CorsModal.jsx';
 import PresignedUrlModal from './components/PresignedUrlModal.jsx';
 import ObjectPropertiesModal from './components/ObjectPropertiesModal.jsx';
 import TransferQueue from './components/TransferQueue.jsx';
@@ -66,6 +67,8 @@ export default function App() {
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [lifecycleRules, setLifecycleRules] = useState([]);
   const [lifecycleModalOpen, setLifecycleModalOpen] = useState(false);
+  const [corsRules, setCorsRules] = useState([]);
+  const [corsModalOpen, setCorsModalOpen] = useState(false);
 
   // Presigned URL generator state
   const [presignedModalOpen, setPresignedModalOpen] = useState(false);
@@ -460,6 +463,28 @@ export default function App() {
     }
   };
 
+  const handleOpenCorsModal = async () => {
+    if (!selectedBucket) return;
+    try {
+      const rules = await window.electronAPI.getBucketCors(selectedBucket);
+      setCorsRules(rules || []);
+      setCorsModalOpen(true);
+    } catch (err) {
+      showToast(err.message || 'Lỗi đọc cấu hình CORS!', 'error');
+    }
+  };
+
+  const handleSaveCorsRules = async (bucketName, rules) => {
+    try {
+      await window.electronAPI.putBucketCors(bucketName, rules);
+      setCorsRules(rules || []);
+      showToast('Lưu cấu hình CORS thành công!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Lỗi lưu cấu hình CORS!', 'error');
+      throw err;
+    }
+  };
+
   const handleSaveAcl = async (bucketName, acl) => {
     try {
       await window.electronAPI.putBucketAcl(bucketName, acl);
@@ -553,6 +578,7 @@ export default function App() {
           }}
           onOpenPolicyModal={handleOpenPolicyModal}
           onOpenLifecycleModal={handleOpenLifecycleModal}
+          onOpenCorsModal={handleOpenCorsModal}
         />
 
         {/* Right Object Explorer View */}
@@ -682,6 +708,15 @@ export default function App() {
         }}
         bucketName={targetDeleteBucket}
         onDelete={handleDeleteBucket}
+      />
+
+      {/* CORS Configuration Modal */}
+      <CorsModal
+        isOpen={corsModalOpen}
+        onClose={() => setCorsModalOpen(false)}
+        bucket={selectedBucket}
+        rules={corsRules}
+        onSaveRules={handleSaveCorsRules}
       />
 
       {/* Global Toast Notification Container */}
