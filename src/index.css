@@ -45,22 +45,78 @@
     color: #475569 !important;
   }
 
+  html.light .text-gray-500 {
+    color: #64748b !important;
+  }
+
   html.light .text-red-200,
-  html.light .text-red-300 {
-    color: #7f1d1d !important;
-  }
-
+  html.light .text-red-300,
   html.light .text-red-400 {
-    color: #991b1b !important;
+    color: #dc2626 !important;
   }
 
-  /* Keep primary/colored elements with white text */
-  html.light .bg-primary-600 .text-white,
-  html.light .bg-primary-500 .text-white,
-  html.light .bg-emerald-600 .text-white,
-  html.light .bg-red-600 .text-white,
-  html.light .bg-gradient-to-tr .text-white {
+  /* Optimize colored text (-300 / -400) so they don't look washed out against white backgrounds */
+  html.light .text-accent-300,
+  html.light .text-accent-400 {
+    color: #0284c7 !important; /* sky-600 */
+  }
+
+  html.light .text-indigo-300,
+  html.light .text-indigo-400 {
+    color: #4f46e5 !important; /* indigo-600 */
+  }
+
+  html.light .text-blue-300,
+  html.light .text-blue-400 {
+    color: #2563eb !important; /* blue-600 */
+  }
+
+  html.light .text-emerald-300,
+  html.light .text-emerald-400 {
+    color: #059669 !important; /* emerald-600 */
+  }
+
+  html.light .text-amber-300,
+  html.light .text-amber-400 {
+    color: #d97706 !important; /* amber-600 */
+  }
+
+  html.light .text-purple-300,
+  html.light .text-purple-400 {
+    color: #7c3aed !important; /* purple-600 */
+  }
+
+  /* Keep primary/colored buttons & badges with crisp white text */
+  html.light [class*="bg-primary-"] .text-white,
+  html.light [class*="bg-indigo-"] .text-white,
+  html.light [class*="bg-blue-"] .text-white,
+  html.light [class*="bg-emerald-"] .text-white,
+  html.light [class*="bg-red-"] .text-white,
+  html.light [class*="bg-amber-"] .text-white,
+  html.light [class*="bg-purple-"] .text-white,
+  html.light [class*="bg-gradient-"] .text-white {
     color: #ffffff !important;
+  }
+
+  /* Automatically adapt dark translucent boxes (bg-black/...) to clean slate boxes in Light Mode */
+  html.light [class*="bg-black/10"],
+  html.light [class*="bg-black/20"],
+  html.light [class*="bg-black/30"] {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  html.light [class*="bg-black/40"],
+  html.light [class*="bg-black/50"],
+  html.light [class*="bg-black/60"],
+  html.light [class*="bg-black/70"] {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Except for modal backdrops (fixed inset-0 bg-black/...) which must remain dim overlay */
+  html.light .fixed.inset-0[class*="bg-black/"] {
+    background-color: rgba(15, 23, 42, 0.45) !important;
   }
 
   html.light input,
@@ -69,6 +125,11 @@
     background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: #cbd5e1 !important;
+  }
+
+  html.light input::placeholder,
+  html.light textarea::placeholder {
+    color: #94a3b8 !important;
   }
 
   /* Table headers in Light Mode */
